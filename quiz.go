@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // Improvements:
@@ -43,8 +45,8 @@ func main() {
 	quests := strings.Split(string(bytes), "\n")
 	total := float32(len(quests))
 
-	ctx, canFunc := context.WithTimeout(context.Background(), time.Second*time.Duration(*timeout))
-	defer canFunc()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(*timeout))
+	defer cancel()
 
 	timer := time.NewTimer(time.Second * time.Duration(*timeout))
 	c := make(chan string)
@@ -63,12 +65,13 @@ Loop:
 			break Loop
 		case ans := <-c:
 			ans = strings.TrimRight(ans, "\n")
-			if ans == a {
+			if cmp.Equal(ans, a) {
 				correct++
 			}
 		}
 	}
 
+	close(c)
 	fmt.Printf("\nTotal number of questions: %.f, correct answers: %.f, score:%2.f percent\n",
 		total, correct, float32((correct/total)*100))
 }
